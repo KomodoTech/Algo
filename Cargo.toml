@@ -1,0 +1,16 @@
+[package]
+name = "Algo"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "algorithms"
+path = "src/lib.rs"
+
+[[bin]]
+name = "mergesort"
+path = "src/bin/mergesort.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
