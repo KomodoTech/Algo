@@ -1,3 +1,108 @@
+
+// 2011 Final Value of Variable After Performing Operations
+// There is a programming language with only four operations and one variable X:
+//     ++X and X++ increments the value of the variable X by 1.
+//     --X and X-- decrements the value of the variable X by 1.
+// Initially, the value of X is 0.
+// Given an array of strings operations containing a list of operations, return the final value of X after performing all the operations.
+//
+// Constraints:
+// 1 <= operations.length <= 100
+// operations[i] will be either "++X", "X++", "--X", or "X--".
+//
+// Time O(N)
+// Space O(1)
+fn final_value_after_operations_brute(operations: Vec<String>) -> i32 {
+    let mut result: i32 = 0;
+    for operation in operations {
+        match operation.as_str() {
+            "++X" | "X++" => result += 1,
+            "--X" | "X--" => result -= 1,
+            _ => panic!(),
+        }
+    }
+    result
+}
+
+// Time O(N)
+// Space O(1)
+fn final_value_after_operations_functional(operations: Vec<String>) -> i32 {
+    operations
+        .iter()
+        .fold(0, |acc, operation| {
+            if operation.contains('+') { acc + 1 } else { acc - 1} 
+        })
+}
+
+// 2235 Add Two Integers
+// Given two integers num1 and num2, return the sum of the two integers.
+// Constraints
+// -100 <= num1, num2 <= 100
+//
+// Time O(1)
+// Space O(1)
+fn sum_brute(num1: i32, num2: i32) -> i32 {
+    num1 + num2
+}
+
+fn sum_bit_manipulation(num1: i32, num2: i32) -> i32 {
+    if num2 == 0 {
+        num1
+    } else {
+        sum_bit_manipulation(num1 ^ num2, (num1 & num2) << 1) 
+    }
+}
+
+// 1108 Defanging an IP Address
+// Given a valid (IPv4) IP address, return a defanged version of that IP address.
+// A defanged IP address replaces every period "." with "[.]".
+// Constraints:
+// The given address is a valid IPv4 address
+//
+// Time O(N)
+// Space O(N)
+fn defang_i_paddr_brute(address: String) -> String {
+    let num_bracket_chars = 6;
+    let mut defang = String::with_capacity(address.len() + num_bracket_chars); 
+    address.chars().for_each(|char| {
+        match char {
+            '.' => defang.push_str("[.]"),
+            _ => defang.push(char),
+        }
+    });
+    defang
+}
+
+// Time O(N)
+// Space O(N)
+// Replace calls match_indices on the String, which returns an iterator over the disjoint matches
+// of the pattern provided with the String. Each element that the iterator returns is a tuple
+// of the index where the pattern was found and the pattern.
+fn defang_i_paddr_replace(address: String) -> String {
+    address.replace('.', "[.]")
+}
+
+// 2469 Convert the Temperature
+// You are given a non-negative floating point number rounded to two decimal places celsius, that denotes the temperature in Celsius.
+// You should convert Celsius into Kelvin and Fahrenheit and return it as an array ans = [kelvin, fahrenheit].
+// Return the array ans. Answers within 10^-5 of the actual answer will be accepted.
+// Note that:
+//     Kelvin = Celsius + 273.15
+//     Fahrenheit = Celsius * 1.80 + 32.00
+// Constraints:
+// 0 <= celsius <= 1000
+//
+// Time O(1)
+// Space O(1)
+fn convert_temperature(celsius: f64) -> Vec<f64> {
+    let kelvin = celsius + 273.15;
+    let fahrenheit = celsius * 1.80 + 32.00;
+    vec![kelvin, fahrenheit]
+}
+
+
+
+
 // 1920 Build Array From Permutation
 // Given a zero-based permutation nums (0-indexed), build an array ans of the same length where 
 // ans[i] = nums[nums[i]] for each 0 <= i < nums.length and return it.
@@ -132,12 +237,57 @@ fn build_array_small_and_fast(mut nums: Vec<i32>) -> Vec<i32> {
 mod tests {
     use super::*;
 
-    // BUILD_ARRAY
+    // FINAL VALUE AFTER OPERATIONS
+    #[test]
+    fn final_value_after_operations_brute_basic() {
+        assert_eq!(final_value_after_operations_brute(vec!["--X".to_string(), "X++".to_string(), "X++".to_string(), "++X".to_string(), "X--".to_string()]), 1);
+    }
+    #[test]
+    fn final_value_after_operations_functional_basic() {
+        assert_eq!(final_value_after_operations_functional(vec!["--X".to_string(), "X++".to_string(), "X++".to_string(), "++X".to_string(), "X--".to_string()]), 1);
+    }
+
+    // ADD TWO INTEGERS
+    #[test]
+    fn sum_brute_basic() {
+        assert_eq!(sum_brute(-10, 4), -6);
+    }
+    #[test]
+    fn sum_bit_manipulation_basic() {
+        assert_eq!(sum_bit_manipulation(-10, 4), -6);
+    }
+
+    // DEFANG IP ADDRESS
+    #[test]
+    fn defang_i_paddr_brute_basic() {
+        let address = "255.100.50.0".to_string();
+        assert_eq!(defang_i_paddr_brute(address), "255[.]100[.]50[.]0".to_string());
+    }
+    #[test]
+    fn defang_i_paddr_replace_basic() {
+        let address = "255.100.50.0".to_string();
+        assert_eq!(defang_i_paddr_replace(address), "255[.]100[.]50[.]0".to_string());
+    }
+
+    // CONVERT THE TEMPERATURE
+    #[test]
+    fn convert_temperature_basic() {
+        let celsius: f64 = 36.50;
+        assert_eq!(convert_temperature(celsius), vec![309.65, 97.70]);
+    }
+
+    // BUILD ARRAY
     #[test]
     fn build_array_brute_basic() {
         let nums = vec![0, 2, 1, 5, 3, 4];
         let solution = vec![0, 1, 2, 4, 5, 3];
         assert_eq!(build_array_brute(nums), solution);
+    }
+    #[test]
+    fn build_array_one_liner_basic() {
+        let nums = vec![0, 2, 1, 5, 3, 4];
+        let solution = vec![0, 1, 2, 4, 5, 3];
+        assert_eq!(build_array_one_liner(nums), solution);
     }
     #[test]
     fn build_array_small_basic() {
