@@ -12,7 +12,7 @@ use std::collections::HashMap;
 // SUM(N-1 + N-2 + ... + 1) = N * (N-1 - 1 + 1)/2 = N*(N-1)/2 which is an element of O(N^2)
 // Space O(1)
 // Type: Two pointers
-fn num_identical_pairs_brute(nums: Vec<i32>) -> i32 {
+pub fn num_identical_pairs_brute(nums: Vec<i32>) -> i32 {
     if nums.len() < 2 { return 0; }
     let mut count = 0;
 
@@ -30,7 +30,7 @@ fn num_identical_pairs_brute(nums: Vec<i32>) -> i32 {
 // Time O(N)
 // Space O(N)
 // Type: Frequency Counter
-fn num_identical_pairs_frequency_counter(nums: Vec<i32>) -> i32 {
+pub fn num_identical_pairs_frequency_counter(nums: Vec<i32>) -> i32 {
     let mut frequency_counter: HashMap<i32, i32> = HashMap::new();
 
     nums.iter().fold(0, |count, &key| {
@@ -121,7 +121,7 @@ fn num_identical_pairs_frequency_counter(nums: Vec<i32>) -> i32 {
 /// (the number of duplicates for that num/key (e.g.  we had 5 1's so the key is 1 and the value is 5)),
 /// we want to calculate the number of combinations: vC2 (where v is the value), and add it to our counter.
 /// Finally we just return the counter
-fn num_identical_pairs_combinatorics(nums: Vec<i32>) -> i32 {
+pub fn num_identical_pairs_combinatorics(nums: Vec<i32>) -> i32 {
     let mut frequency_counter: HashMap<i32, i32> = HashMap::new();
 
     // Calculate frequencies:
@@ -143,7 +143,42 @@ fn num_identical_pairs_combinatorics(nums: Vec<i32>) -> i32 {
     })
 }
 
+// use pass by ref to avoid moving ownership and keep option to reuse variable
+// signature of &[T] instead of &Vec<T> because Vec<T> implements AsRef<[T]>, so this functions accepts both
+// &Vec<T> and &[T]
+pub fn num_identical_pairs_combinatorics_refactored(nums: &[i32]) -> u64 {
+    let mut frequency_counter = HashMap::new();
+    for num in nums {
+        *frequency_counter.entry(num).or_insert(0) += 1;
+    }
+    frequency_counter.values().fold(0, |counter, value| {
+        counter + (*value) * (*value - 1) / 2
+    })
+}
 
+// Use array instead of HashMap for storing frequencies
+// Works because of constraints on values stored in nums being positive
+// so that you can use the value as index of array
+pub fn num_identical_pairs_array(nums: &[i32]) -> u64 {
+    const MAX_UNIQUE: usize = 100_000;
+    let mut frequency_counter:[Option<u64>; MAX_UNIQUE] = [None; MAX_UNIQUE];
+    for num in nums {
+        match frequency_counter[*num as usize] {
+            Some(freq) => {
+                frequency_counter[*num as usize] = Some(freq + 1);
+            },
+            None => {
+                frequency_counter[*num as usize] = Some(1);
+            }
+        }
+    }
+    frequency_counter
+    .iter()
+    .filter(|op| op.is_some())
+    .fold(0, |counter, freq| {
+        counter + (freq.unwrap()) * (freq.unwrap() - 1) / 2
+    })
+}
 
 // 1470 Shuffle the Array
 // Given the array nums consisting of 2n elements in the form [x1,x2,...,xn,y1,y2,...,yn].
@@ -614,6 +649,18 @@ mod tests {
         let nums = vec![1, 2, 3, 1, 1, 3, 1, 1];
         let expected = 11;
         assert_eq!(num_identical_pairs_combinatorics(nums), expected);
+    }
+    #[test]
+    fn num_identical_pairs_combinatorics_refactored_basic() {
+        let nums = [1, 2, 3, 1, 1, 3, 1, 1];
+        let expected = 11;
+        assert_eq!(num_identical_pairs_combinatorics_refactored(&nums), expected);
+    }
+    #[test]
+    fn num_identical_pairs_array_basic() {
+        let nums = [1, 2, 3, 1, 1, 3, 1, 1];
+        let expected = 11;
+        assert_eq!(num_identical_pairs_array(&nums), expected);
     }
     // SHUFFLE THE ARRAY
     #[test]

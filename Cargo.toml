@@ -8,8 +8,8 @@ name = "algorithms"
 path = "src/lib.rs"
 
 [[bin]]
-name = "mergesort"
-path = "src/bin/mergesort.rs"
+name = "num_of_good_pairs"
+path = "src/bin/num_of_good_pairs.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
