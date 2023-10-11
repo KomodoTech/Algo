@@ -1,4 +1,50 @@
-use std::collections::HashMap;
+use std::{collections::HashMap};
+use std::error::Error;
+
+// Sorting Algorithms
+pub trait Sorter {
+    fn sort<T>(&self, slice: &mut [T])
+    where
+        T: Ord;
+}
+
+mod bubblesort;
+mod insertionsort;
+mod selectionsort;
+mod quicksort;
+
+
+/*
+    1. Two Sum
+    Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.
+    You may assume that each input would have exactly one solution, and you may not use the same element twice.
+    You can return the answer in any order. 
+
+    Constraints:
+
+    2 <= nums.length <= 104
+    -109 <= nums[i] <= 109
+    -109 <= target <= 109
+    Only one valid answer exists.
+*/
+pub fn two_sum(nums: Vec<i32>, target: i32) -> Result<Vec<usize>, Box<dyn Error>>{
+    // build cache that stores delta between target and each num in nums
+    // as the key, and the index in nums of current num as value    
+    let mut delta_cache = HashMap::<i32, usize>::new();
+    for (idx, num) in nums.into_iter().enumerate() {
+        let delta = target - num;
+        // if current num is already in cache, then it was a previous delta
+        // and we need to return the current num's and corresponding delta's indices
+        if let Some(delta_index) = delta_cache.get(&num) {
+            return Ok(vec![*delta_index, idx]);
+        } else {
+            // otherwise we need to cache the current delta and index
+            delta_cache.insert(delta, idx);
+        }
+    }
+    
+    Err("No two elements of nums sum up to target".into())
+}
 
 // 1512 Number of Good Pairs
 // Given an array of integers nums, return the number of good pairs.
@@ -13,17 +59,21 @@ use std::collections::HashMap;
 // Space O(1)
 // Type: Two pointers
 pub fn num_identical_pairs_brute(nums: Vec<i32>) -> i32 {
-    if nums.len() < 2 { return 0; }
+    if nums.len() < 2 {
+        return 0;
+    }
     let mut count = 0;
 
-    for i in 0..nums.len()-1 {
-        for j in i+1..nums.len() {
-            if nums[i] == nums[j] { count += 1;}
+    for i in 0..nums.len() - 1 {
+        for j in i + 1..nums.len() {
+            if nums[i] == nums[j] {
+                count += 1;
+            }
         }
     }
     count
 }
-// Standard 
+// Standard
 // Iterate O(N) and check cache O(1) lookup as you go, if it is already there, increment count.
 // Otherwise add to cache O(1) insert
 //
@@ -33,87 +83,86 @@ pub fn num_identical_pairs_brute(nums: Vec<i32>) -> i32 {
 pub fn num_identical_pairs_frequency_counter(nums: Vec<i32>) -> i32 {
     let mut frequency_counter: HashMap<i32, i32> = HashMap::new();
 
-    nums.iter().fold(0, |count, &key| {
-        match frequency_counter.get_mut(&key) {
+    nums.iter()
+        .fold(0, |count, &key| match frequency_counter.get_mut(&key) {
             Some(value) => {
                 *value += 1;
                 count + *value - 1
-            },
-            None =>  {
+            }
+            None => {
                 frequency_counter.insert(key, 1);
                 count
-            },
-        }
-    })
+            }
+        })
 }
 /// One of the keys is to realize that the concept of counting "good" pairs versus
-/// all pairs, is the difference between calculating combinations versus counting the permutations. 
-/// 
-/// 
+/// all pairs, is the difference between calculating combinations versus counting the permutations.
+///
+///
 /// If nums is [1, 2, 3, 1, 1, 3, 1, 1], and you want to know how many "good" and "total" pairs of 1s
 /// there are:
-/// 
+///
 /// Total Pairs Of 1s:
 /// There are 20 total pairs you can form with 5 ones. You choose one of the 5 ones as the first element
 /// in the pair and then you have 4 choices for the second one. This is a permutation calculation.
-/// 
+///
 /// nPr = n!/(n-r)!
-/// 
-/// where n is the number of 1s (5), and r is the number of elements we are selecting (pairs so 2). 
+///
+/// where n is the number of 1s (5), and r is the number of elements we are selecting (pairs so 2).
 /// So 5P2 = 5!/(5-2)! = 5!/3! = 5*4 = 20
-/// 
+///
 /// Those pairs are (using the indices of the ones):
-/// 
+///
 /// (0, 3), (3, 0), (4, 0), (6, 0), (7, 0)
 /// (0, 4), (3, 4), (4, 3), (6, 3), (7, 3)
 /// (0, 6), (3, 6), (4, 6), (6, 4), (7, 4)
 /// (0, 7), (3, 7), (4, 7), (6, 7), (7, 6)
-/// 
+///
 /// Bad Pairs Of 1s:
-/// 
+///
 /// Which of those are bad pairs?
-/// 
+///
 ///         (3, 0), (4, 0), (6, 0), (7, 0)
 ///                 (4, 3), (6, 3), (7, 3)
 ///                         (6, 4), (7, 4)
 ///                                 (7, 6)
-/// 
+///
 /// Half of them in fact.
-/// 
+///
 /// And the other half are the "good" pairs:
 /// (0, 3)
 /// (0, 4), (3, 4)
 /// (0, 6), (3, 6), (4, 6)
 /// (0, 7), (3, 7), (4, 7), (6, 7)
-/// 
+///
 /// Good Pairs Of 1s:
-/// 
+///
 /// You can see from looking at the good and the bad pairs, that really they are the
 /// same elements but the order is just swapped. If you want to find the number of
 /// good pairs directly, you can just find the "selection of items (1s) from the set of
 /// distinct members (each 1 is distinct in our problem), such that the order of selection
 /// does not matter (unlike permutations)" aka calculate the combination.
-/// 
+///
 /// In our example, we would calculate nCr for n = 5 (number of 1s), and r = 2 (pairs):
-/// 
+///
 /// nCr = n! / ((n-r)!*r!)
-/// 
-/// 5C2 = 5! / ((3)!*2!) = 20/2 = 10 
-/// 
+///
+/// 5C2 = 5! / ((3)!*2!) = 20/2 = 10
+///
 /// You can also see that in the problem n is variable but we're always looking at pairs so r = 2.
 /// Hence, nC2 = n! / ((n-2)!*2!)  =  (n * (n-1))/2
-/// 
+///
 /// This is correct, but if you're not completely convinced, another way to look at our example is:
 /// You would probably naturally start at the first 1, and you would see that there are 4 other
 /// 1s after it that it could pair with. Then you would look at the second 1 and see that it can
-/// pair with 3 other 1s, etc. Your count of "good" pairs would be 4 + 3 + 2 + 1 = 10. 
-/// 
+/// pair with 3 other 1s, etc. Your count of "good" pairs would be 4 + 3 + 2 + 1 = 10.
+///
 /// If you did this for any n, you would get the arithmetic sum (9 year old Gauss punishment):
 /// SUM from i = 1 to i = n-1 of i:
 /// 1 + 2 + 3 + ... + (n-1) = n * (n-1 - 1 + 1) / 2 = (n * (n-1))/2
-/// 
+///
 /// Same result!
-/// 
+///
 /// So back to the problem at hand:
 /// Start by populating a HashMap with each number in nums, and the number of occurences O(N).
 /// Next we initialize a counter variable to 0
@@ -125,16 +174,15 @@ pub fn num_identical_pairs_combinatorics(nums: Vec<i32>) -> i32 {
     let mut frequency_counter: HashMap<i32, i32> = HashMap::new();
 
     // Calculate frequencies:
-    nums.iter().for_each(|num| {
-        match frequency_counter.get_mut(num) {
+    nums.iter()
+        .for_each(|num| match frequency_counter.get_mut(num) {
             Some(count) => {
                 *count += 1;
-            },
-            None =>  {
+            }
+            None => {
                 frequency_counter.insert(*num, 1);
-            },
-        }
-    });
+            }
+        });
 
     // Count combinations:
     frequency_counter.iter().fold(0, |counter, (_key, value)| {
@@ -151,9 +199,9 @@ pub fn num_identical_pairs_combinatorics_refactored(nums: &[i32]) -> u64 {
     for num in nums {
         *frequency_counter.entry(num).or_insert(0) += 1;
     }
-    frequency_counter.values().fold(0, |counter, value| {
-        counter + (*value) * (*value - 1) / 2
-    })
+    frequency_counter
+        .values()
+        .fold(0, |counter, value| counter + (*value) * (*value - 1) / 2)
 }
 
 // Use array instead of HashMap for storing frequencies
@@ -161,23 +209,23 @@ pub fn num_identical_pairs_combinatorics_refactored(nums: &[i32]) -> u64 {
 // so that you can use the value as index of array
 pub fn num_identical_pairs_array(nums: &[i32]) -> u64 {
     const MAX_UNIQUE: usize = 100_000;
-    let mut frequency_counter:[Option<u64>; MAX_UNIQUE] = [None; MAX_UNIQUE];
+    let mut frequency_counter: [Option<u64>; MAX_UNIQUE] = [None; MAX_UNIQUE];
     for num in nums {
         match frequency_counter[*num as usize] {
             Some(freq) => {
                 frequency_counter[*num as usize] = Some(freq + 1);
-            },
+            }
             None => {
                 frequency_counter[*num as usize] = Some(1);
             }
         }
     }
     frequency_counter
-    .iter()
-    .filter(|op| op.is_some())
-    .fold(0, |counter, freq| {
-        counter + (freq.unwrap()) * (freq.unwrap() - 1) / 2
-    })
+        .iter()
+        .filter(|op| op.is_some())
+        .fold(0, |counter, freq| {
+            counter + (freq.unwrap()) * (freq.unwrap() - 1) / 2
+        })
 }
 
 // 1470 Shuffle the Array
@@ -190,8 +238,8 @@ pub fn num_identical_pairs_array(nums: &[i32]) -> u64 {
 // 1 <= nums[i] <= 10^3
 // Time O(N)
 // Space O(N)
-fn shuffle_brute(nums: Vec<i32>, n:i32) -> Vec<i32> {
-    let mut out: Vec<i32> = Vec::with_capacity(2*(n as usize));
+fn shuffle_brute(nums: Vec<i32>, n: i32) -> Vec<i32> {
+    let mut out: Vec<i32> = Vec::with_capacity(2 * (n as usize));
     for i in 0..n as usize {
         out.push(nums[i]);
         out.push(nums[i + (n as usize)]);
@@ -201,46 +249,46 @@ fn shuffle_brute(nums: Vec<i32>, n:i32) -> Vec<i32> {
 /// Example:
 /// nums = [x0, x1, x2, x3, y0, y1, y2, y3]
 /// We want to get the following out at the end:
-/// 
+///
 /// [x0, y0, x1, y1, x2, y2, x3, y3]
 /// In order to make unpacking as straightforward as possible, we would want the step
 /// before unpacking to look like this:
-/// 
+///
 /// [x0*q+x0, y0*q+x1, x1*q+x2, y1*q+x3, x2*q+y0, y2*q+y1, x3*q+y2, y3*q+y3]
-/// 
+///
 /// So the original value will always be used as the r_i and for the b_i we need a
 /// generalizeable pattern to find the index:
-/// 
+///
 /// index pattern:
 /// [i/2, N + ((i+1)/2), i/2, N + ((i+1)/2), i/2, N + ((i+1)/2), i/2, N + ((i+1)/2)]
-/// 
+///
 /// There are really two patterns here depending on the parity of the index
 /// NOTE: you'll be reaching back to previous elements though so you need to take %q to make
 /// sure that you're grabbing the right value whether or not it has already been modified
 //
 // Time O(N)
 // Space O(1)
-fn shuffle_charlies_grandparents(mut nums: Vec<i32>, n:i32) -> Vec<i32> {
+fn shuffle_charlies_grandparents(mut nums: Vec<i32>, n: i32) -> Vec<i32> {
     // q > r based off of max value stored in nums being 10^3
     let q = 1001;
     // Packing
-    for i in 0..2*(n as usize) {
+    for i in 0..2 * (n as usize) {
         // grab original value whether or not it was modified
         let r = nums[i] % q;
-        match i%2 {
+        match i % 2 {
             0 => {
-                let b = nums[i/2] % q;
-                nums[i] = b*q + r;
-            },
+                let b = nums[i / 2] % q;
+                nums[i] = b * q + r;
+            }
             1 => {
-                let b = nums[n as usize + ((i-1)/2)] % q;
-                nums[i] = b*q + r;
-            },
-            _ => panic!()
+                let b = nums[n as usize + ((i - 1) / 2)] % q;
+                nums[i] = b * q + r;
+            }
+            _ => panic!(),
         }
     }
     // Unpacking
-    nums.iter_mut().map(|num| *num/q).collect()
+    nums.iter_mut().map(|num| *num / q).collect()
 }
 /// This approach packs all the nums[i] into nums[i+n] in the highest order bits
 // This is way less complicated than the construction in the previous version
@@ -254,12 +302,12 @@ fn shuffle_bitpacking(mut nums: Vec<i32>, n: i32) -> Vec<i32> {
     let mask = 0x3FF;
     // Packing
     for i in 0..n {
-        nums[i+n] |= nums[i] << size;
+        nums[i + n] |= nums[i] << size;
     }
     //Unpacking
     for i in 0..n {
-        nums[2*i] = nums[i+n] >> 10;
-        nums[2*i+1] = nums[i+n] & mask;
+        nums[2 * i] = nums[i + n] >> 10;
+        nums[2 * i + 1] = nums[i + n] & mask;
     }
     nums
 }
@@ -271,12 +319,12 @@ fn shuffle_charlies_grandparents_simplified(mut nums: Vec<i32>, n: i32) -> Vec<i
     let q = 1001;
     // Packing
     for i in 0..n {
-        nums[i+n] += nums[i]*q;
+        nums[i + n] += nums[i] * q;
     }
     // Unpacking
     for i in 0..n {
-        nums[2*i] = nums[i+n]/q;
-        nums[2*i+1] = nums[i+n]%q;
+        nums[2 * i] = nums[i + n] / q;
+        nums[2 * i + 1] = nums[i + n] % q;
     }
     nums
 }
@@ -302,19 +350,17 @@ fn running_sum_brute(nums: Vec<i32>) -> Vec<i32> {
 
 fn running_sum_map(nums: Vec<i32>) -> Vec<i32> {
     let mut sum = 0;
-    nums
-        .into_iter()
+    nums.into_iter()
         .map(|num| {
-                sum += num;
-                sum
-            })
+            sum += num;
+            sum
+        })
         .collect::<Vec<i32>>()
 }
 
 fn running_sum_scan(nums: Vec<i32>) -> Vec<i32> {
-    nums
-        .iter()
-        .scan(0, |sum, num|{
+    nums.iter()
+        .scan(0, |sum, num| {
             *sum += num;
             Some(*sum)
         })
@@ -335,10 +381,12 @@ fn running_sum_scan(nums: Vec<i32>) -> Vec<i32> {
 // Space O(N)
 fn get_concatenation_brute(nums: Vec<i32>) -> Vec<i32> {
     let n = nums.len();
-    if n == 0 {return nums}
-    let mut out = Vec::with_capacity(n*2);
-    for i in 0..2*n {
-        out.push(nums[i%n]);
+    if n == 0 {
+        return nums;
+    }
+    let mut out = Vec::with_capacity(n * 2);
+    for i in 0..2 * n {
+        out.push(nums[i % n]);
     }
     out
 }
@@ -367,7 +415,7 @@ fn get_concatenation_clone_push(nums: Vec<i32>) -> Vec<i32> {
 fn get_concatenation_clone_append(nums: Vec<i32>) -> Vec<i32> {
     let mut out = nums.clone();
     let mut nums_copy = nums.clone();
-    out.append(&mut nums_copy); 
+    out.append(&mut nums_copy);
     out
 }
 
@@ -425,11 +473,13 @@ fn final_value_after_operations_brute(operations: Vec<String>) -> i32 {
 // Time O(N)
 // Space O(1)
 fn final_value_after_operations_functional(operations: Vec<String>) -> i32 {
-    operations
-        .iter()
-        .fold(0, |acc, operation| {
-            if operation.contains('+') { acc + 1 } else { acc - 1} 
-        })
+    operations.iter().fold(0, |acc, operation| {
+        if operation.contains('+') {
+            acc + 1
+        } else {
+            acc - 1
+        }
+    })
 }
 
 // 2235 Add Two Integers
@@ -447,7 +497,7 @@ fn sum_bit_manipulation(num1: i32, num2: i32) -> i32 {
     if num2 == 0 {
         num1
     } else {
-        sum_bit_manipulation(num1 ^ num2, (num1 & num2) << 1) 
+        sum_bit_manipulation(num1 ^ num2, (num1 & num2) << 1)
     }
 }
 
@@ -461,12 +511,10 @@ fn sum_bit_manipulation(num1: i32, num2: i32) -> i32 {
 // Space O(N)
 fn defang_i_paddr_brute(address: String) -> String {
     let num_bracket_chars = 6;
-    let mut defang = String::with_capacity(address.len() + num_bracket_chars); 
-    address.chars().for_each(|char| {
-        match char {
-            '.' => defang.push_str("[.]"),
-            _ => defang.push(char),
-        }
+    let mut defang = String::with_capacity(address.len() + num_bracket_chars);
+    address.chars().for_each(|char| match char {
+        '.' => defang.push_str("[.]"),
+        _ => defang.push(char),
     });
     defang
 }
@@ -499,10 +547,10 @@ fn convert_temperature(celsius: f64) -> Vec<f64> {
 }
 
 // 1920 Build Array From Permutation
-// Given a zero-based permutation nums (0-indexed), build an array ans of the same length where 
+// Given a zero-based permutation nums (0-indexed), build an array ans of the same length where
 // ans[i] = nums[nums[i]] for each 0 <= i < nums.length and return it.
 // A zero-based permutation nums is an array of distinct integers from 0 to nums.length - 1 (inclusive).
-// 
+//
 //Constraints:
 // 1 <= nums.length <= 1000
 // 0 <= nums[i] < nums.length
@@ -539,7 +587,7 @@ fn build_array_one_liner(nums: Vec<i32>) -> Vec<i32> {
 // Take a = qb + r, where b % q != 0, and r < q. We can extract b and r from a:
 // b = a // q
 //
-// NOTE: 
+// NOTE:
 // r < q, means that qb =< qb + r < q(b + 1)
 // which means that ((qb + r) // q) is going to be b
 //
@@ -558,14 +606,14 @@ pub fn build_array_small(mut nums: Vec<i32>) -> Vec<i32> {
         let r = nums[i];
         // This is the tricky part:
         // nums[i] might be less than i, so
-        // nums[nums[i]] might already be in a=qb+r form (but it might not). If it is, and we 
+        // nums[nums[i]] might already be in a=qb+r form (but it might not). If it is, and we
         // take mod q we should get back the original r (aka the value that was there before which
         // is what we want. that's the permutation bit).
         // if it hasn't been made into a=qb+r, then taking mod won't change anything since
         // r < q
         let b = nums[nums[i] as usize] % q;
         // Now combine b and r in a in a manner that can be reversed.
-        nums[i] = q*b + r;
+        nums[i] = q * b + r;
     });
     // now turn all elements in nums (a's) into b's which is what we want to return
     // using integer division in order to "unwrap" the permuted value from the "combo" value
@@ -591,28 +639,28 @@ pub fn build_array_small(mut nums: Vec<i32>) -> Vec<i32> {
 // That means that all values can be stored in 10 bits. We can store the original
 // values in the 10 least significant bits, and then store the permuted one in the next
 // 10 bits like so:
-// 
+//
 // nums[i] = (0000 0000 0000)(1000 1000 11)(01 0011 0100)
 // where the lowest 10 bits hold the original values nums[i]
 // the next 10 bits hold the new values nums[nums[i]]
 // and the next 12 bits are just unused
-// 
+//
 // We're achieving this setup by simply bitwise ORing each nums[i]
 // with nums[nums[i] & mask] << 10
 //
-// Where the mask is 1023 which looks like this in our i32:  
+// Where the mask is 1023 which looks like this in our i32:
 // 0000 0000 0000 0000 0000 0011 1111 1111
-// 
+//
 // The reason for the masking is similar to the reason why we take %q in our a=qb+r solution
 // nums[i] may or may not already have been modified to hold both the original and the new values
 // we care about. If it hasn't been modified, since we know the value fits in 10 bits, ORing
 // it with 10 1's won't change it. If on the other hand it has been modified, we extract the
 // orginal value via a bitwise AND with our mask. Exactly the same concept as modulo with
 // a=qb+r.
-// 
+//
 // Once we have our new value, we create a combo value by shifting the new value over 10
 // bits and ORing the new and the old values together. Very clever.
-// 
+//
 // After we created all of our combo values,
 // In order to unpack everything and return just the desired 'new' values, we just perform
 // a right shift by 10 on each element of the combo array, and we return the result. Exact
@@ -625,26 +673,81 @@ fn build_array_small_and_fast(mut nums: Vec<i32>) -> Vec<i32> {
     nums
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    // SORTING
+    // BUBBLESORT
+    struct StdSorter;
+    impl Sorter for StdSorter {
+        fn sort<T>(&self, slice: &mut [T])
+        where
+            T: Ord {
+                slice.sort();
+            }
+    }
+
+    #[test]
+    fn std_works() {
+        let mut input = vec![4, 2, 3, 1];
+        StdSorter.sort(&mut input);
+        assert_eq!(input, &[1, 2, 3, 4]);
+    }
+
+    // TWO SUM
+    #[test]
+    fn two_sum_basic() {
+        let nums = vec![2, 7, 11, 15];
+        let target = 9;
+        let mut expected = vec![0, 1];
+        expected.sort();
+        let mut result = two_sum(nums, target).unwrap();
+        result.sort();
+        assert_eq!(result, expected);
+    }
+    #[test]
+    fn two_sum_target_twice_first_element() {
+        // to make sure that you are not using same element twice
+        let nums = vec![3, 2, 4];
+        let target = 6;
+        let mut expected = vec![1, 2];
+        expected.sort();
+        let mut result = two_sum(nums, target).unwrap();
+        result.sort();
+        assert_eq!(result, expected);
+    }
+    #[test]
+    fn two_sum_two_of_same_number_can_be_used() {
+        let nums = vec![3, 3];
+        let target = 6;
+        let mut expected = vec![0, 1];
+        expected.sort();
+        let mut result = two_sum(nums, target).unwrap();
+        result.sort();
+        assert_eq!(result, expected);
+    }
+    #[test]
+    fn two_sum_no_two_elements_sum_to_target() {
+        let nums = vec![1, 2, 3];
+        let target = 6;
+        let result = two_sum(nums, target);
+        assert!(result.is_err());
+    }
     // NUMBER OF GOOD PAIRS
-    #[test] 
+    #[test]
     fn num_identical_pairs_brute_basic() {
         let nums = vec![1, 2, 3, 1, 1, 3, 1, 1];
         let expected = 11;
         assert_eq!(num_identical_pairs_brute(nums), expected);
     }
-    #[test] 
+    #[test]
     fn num_identical_pairs_frequency_counter_basic() {
         let nums = vec![1, 2, 3, 1, 1, 3, 1, 1];
         let expected = 11;
         assert_eq!(num_identical_pairs_frequency_counter(nums), expected);
     }
-    #[test] 
+    #[test]
     fn num_identical_pairs_combinatorics_basic() {
         let nums = vec![1, 2, 3, 1, 1, 3, 1, 1];
         let expected = 11;
@@ -654,7 +757,10 @@ mod tests {
     fn num_identical_pairs_combinatorics_refactored_basic() {
         let nums = [1, 2, 3, 1, 1, 3, 1, 1];
         let expected = 11;
-        assert_eq!(num_identical_pairs_combinatorics_refactored(&nums), expected);
+        assert_eq!(
+            num_identical_pairs_combinatorics_refactored(&nums),
+            expected
+        );
     }
     #[test]
     fn num_identical_pairs_array_basic() {
@@ -719,7 +825,10 @@ mod tests {
     #[test]
     fn get_concatenation_brute_alt_basic() {
         let nums = vec![1, 3, 2, 1];
-        assert_eq!(get_concatenation_brute_alt(nums), vec![1, 3, 2, 1, 1, 3, 2, 1]);
+        assert_eq!(
+            get_concatenation_brute_alt(nums),
+            vec![1, 3, 2, 1, 1, 3, 2, 1]
+        );
     }
     #[test]
     fn get_concatenation_repeat_basic() {
@@ -729,12 +838,18 @@ mod tests {
     #[test]
     fn get_concatenation_clone_push_basic() {
         let nums = vec![1, 3, 2, 1];
-        assert_eq!(get_concatenation_clone_push(nums), vec![1, 3, 2, 1, 1, 3, 2, 1]);
+        assert_eq!(
+            get_concatenation_clone_push(nums),
+            vec![1, 3, 2, 1, 1, 3, 2, 1]
+        );
     }
     #[test]
     fn get_concatenation_append_basic() {
         let nums = vec![1, 3, 2, 1];
-        assert_eq!(get_concatenation_clone_append(nums), vec![1, 3, 2, 1, 1, 3, 2, 1]);
+        assert_eq!(
+            get_concatenation_clone_append(nums),
+            vec![1, 3, 2, 1, 1, 3, 2, 1]
+        );
     }
     #[test]
     fn get_concatenation_chain_basic() {
@@ -744,12 +859,18 @@ mod tests {
     #[test]
     fn get_concatenation_chain_copied_basic() {
         let nums = vec![1, 3, 2, 1];
-        assert_eq!(get_concatenation_chain_copied(nums), vec![1, 3, 2, 1, 1, 3, 2, 1]);
+        assert_eq!(
+            get_concatenation_chain_copied(nums),
+            vec![1, 3, 2, 1, 1, 3, 2, 1]
+        );
     }
     #[test]
     fn get_concatenation_chain_map_equivalent_basic() {
         let nums = vec![1, 3, 2, 1];
-        assert_eq!(get_concatenation_chain_map_equivalent(nums), vec![1, 3, 2, 1, 1, 3, 2, 1]);
+        assert_eq!(
+            get_concatenation_chain_map_equivalent(nums),
+            vec![1, 3, 2, 1, 1, 3, 2, 1]
+        );
     }
     #[test]
     fn get_concatenation_cycle_basic() {
@@ -769,11 +890,29 @@ mod tests {
     // FINAL VALUE AFTER OPERATIONS
     #[test]
     fn final_value_after_operations_brute_basic() {
-        assert_eq!(final_value_after_operations_brute(vec!["--X".to_string(), "X++".to_string(), "X++".to_string(), "++X".to_string(), "X--".to_string()]), 1);
+        assert_eq!(
+            final_value_after_operations_brute(vec![
+                "--X".to_string(),
+                "X++".to_string(),
+                "X++".to_string(),
+                "++X".to_string(),
+                "X--".to_string()
+            ]),
+            1
+        );
     }
     #[test]
     fn final_value_after_operations_functional_basic() {
-        assert_eq!(final_value_after_operations_functional(vec!["--X".to_string(), "X++".to_string(), "X++".to_string(), "++X".to_string(), "X--".to_string()]), 1);
+        assert_eq!(
+            final_value_after_operations_functional(vec![
+                "--X".to_string(),
+                "X++".to_string(),
+                "X++".to_string(),
+                "++X".to_string(),
+                "X--".to_string()
+            ]),
+            1
+        );
     }
     // ADD TWO INTEGERS
     #[test]
@@ -788,12 +927,18 @@ mod tests {
     #[test]
     fn defang_i_paddr_brute_basic() {
         let address = "255.100.50.0".to_string();
-        assert_eq!(defang_i_paddr_brute(address), "255[.]100[.]50[.]0".to_string());
+        assert_eq!(
+            defang_i_paddr_brute(address),
+            "255[.]100[.]50[.]0".to_string()
+        );
     }
     #[test]
     fn defang_i_paddr_replace_basic() {
         let address = "255.100.50.0".to_string();
-        assert_eq!(defang_i_paddr_replace(address), "255[.]100[.]50[.]0".to_string());
+        assert_eq!(
+            defang_i_paddr_replace(address),
+            "255[.]100[.]50[.]0".to_string()
+        );
     }
     // CONVERT THE TEMPERATURE
     #[test]
